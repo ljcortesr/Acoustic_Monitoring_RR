@@ -60,6 +60,7 @@ internal class ProbabilitiesAdapter : RecyclerView.Adapter<ProbabilitiesAdapter.
         fun bind(label: String, score: Float, index: Int) {
             with(binding) {
                 labelTextView.text = label
+                scoreText.text = String.format("%.6f", score)
 
                 progressBar.progressBackgroundTintList =
                     ColorStateList.valueOf(

@@ -36,6 +36,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.Navigation
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import org.tensorflow.lite.examples.audio.AudioClassificationHelper
 import org.tensorflow.lite.examples.audio.R
 import org.tensorflow.lite.examples.audio.databinding.FragmentAudioBinding
@@ -65,6 +67,10 @@ class AudioFragment : Fragment() {
     private val adapter by lazy { ProbabilitiesAdapter() }
 
     private lateinit var audioHelper: AudioClassificationHelper
+    //Location
+    private val LOCATION_PERMISSION_REQUEST_CODE = 1001
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
     private val audioClassificationListener = object : AudioClassificationListener {
         override fun onResult(results: List<Category>, ordered: List<Category>, inferenceTime: Long) {
             requireActivity().runOnUiThread {
@@ -85,22 +91,46 @@ class AudioFragment : Fragment() {
                 adapter.notifyDataSetChanged()
             }
         }
+        fun saveCurrentLocationString(onResult: (String?) -> Unit) {
+            if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+                onResult(null)
+                return
+            }
+
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location ->
+                    val latLonString = location?.let { "${it.latitude},${it.longitude}" }
+                    onResult(latLonString)
+                }
+                .addOnFailureListener {
+                    onResult(null)
+                }
+        }
+        @RequiresApi(Build.VERSION_CODES.O)
         fun stackData(results: List<Category>){
         // Cycle to add all the elements from results to a new List of String
                 if(firstTime) {
                 //First time
+                    categories.add("Capture location")
+                    categories.add("Capture time")
                     for (category in results) {
                         categories.add(category.label)
                     }
                     firstTime=false
                 }
             var scores: MutableList<String> = mutableListOf()
-            for (category in results) {
-                scores.add(category.score.toString())
+            val currentMoment = LocalDateTime.now()
+            saveCurrentLocationString { result ->
+                val currentLocation = result ?: "Unknown location"
+                scores.add(currentLocation)
+                var now = ""+ currentMoment.monthValue.toString()+"/"+currentMoment.dayOfMonth.toString()+"/"+currentMoment.year.toString()+"_"+currentMoment.hour.toString()+":"+currentMoment.minute.toString()+":"+currentMoment.second.toString()+":"+(currentMoment.nano/ 1_000_000).toString()
+                scores.add(now)
+                for (category in results) {
+                    scores.add(category.score.toString())
+                }
+                data.add(scores)
             }
-            data.add(scores)
-        //add the previous List to data
-
 
         }
         override fun saveCsvFile(filename: String) {
@@ -151,7 +181,6 @@ class AudioFragment : Fragment() {
     ): View {
 
         _fragmentBinding = FragmentAudioBinding.inflate(inflater, container, false)
-
         val start: Button = _fragmentBinding!!.startButton
         val stop: Button = _fragmentBinding!!.stopButton
         start.setOnClickListener {
@@ -216,6 +245,16 @@ class AudioFragment : Fragment() {
             requireContext(),
             audioClassificationListener
         )
+        //Location
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
+
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
+        }
 
         // Allow the user to select between multiple supported audio models.
         // The original location and documentation for these models is listed in

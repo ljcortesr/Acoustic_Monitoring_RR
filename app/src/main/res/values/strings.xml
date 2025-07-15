@@ -42,4 +42,5 @@
         <item>CPU</item>
         <item>NNAPI</item>
     </string-array>
+    <string name="land_ack">This recording was made on the traditional homelands of the Gayogo̱hó:nǫˀ (Cayuga Nation). ... We use a model trained...</string>
 </resources>

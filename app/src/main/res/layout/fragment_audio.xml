@@ -29,7 +29,7 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view"
             android:layout_width="match_parent"
-            android:layout_height="660dp"
+            android:layout_height="550dp"
             android:layout_margin="@dimen/margin_default"
             android:scrollbars="vertical"
             app:layoutManager="LinearLayoutManager"
@@ -39,8 +39,10 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal">
+            android:layout_height="wrap_content"
+            android:visibility="visible"
+            android:orientation="horizontal"
+            app:layout_constraintStart_toStartOf="parent">
 
             <TextView
                 android:id="@+id/dataRecording"
