@@ -31,6 +31,13 @@
     <string name="label_overlap">Overlap</string>
     <string name="label_threads">Threads</string>
 
+    <string name="label_start">Start</string>
+    <string name="label_save">Save</string>
+    <string name="label_indication">Data recording</string>
+
+    <string name="label_note">Add note</string>
+    <string name="hint_text">Add some annotations about your acoustic experience</string>
+
     <string-array name="overlap_spinner_titles">
         <item>0%</item>
         <item>25%</item>

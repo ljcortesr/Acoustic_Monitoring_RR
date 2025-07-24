@@ -28,6 +28,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.Button
+import android.widget.EditText
 import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -44,16 +45,18 @@ import org.tensorflow.lite.examples.audio.databinding.FragmentAudioBinding
 import org.tensorflow.lite.examples.audio.ui.ProbabilitiesAdapter
 import org.tensorflow.lite.support.label.Category
 import java.io.IOException
-import java.io.File
-import java.io.FileOutputStream
-import java.io.FileWriter
+import java.text.SimpleDateFormat
 import java.io.OutputStream
+import org.json.JSONArray
+import org.json.JSONObject
+import java.util.*
+import android.net.Uri
 
 
 interface AudioClassificationListener {
     fun onError(error: String)
     fun onResult(results: List<Category>, ordered: List<Category>, inferenceTime: Long)
-    fun saveCsvFile(filename: String)
+    //fun saveCsvFile(filename: String)
 }
 
 class AudioFragment : Fragment() {
@@ -71,7 +74,11 @@ class AudioFragment : Fragment() {
     private val LOCATION_PERMISSION_REQUEST_CODE = 1001
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
+    //To save metadata
+    private var currentMetadataUri: Uri? = null
+
     private val audioClassificationListener = object : AudioClassificationListener {
+        @RequiresApi(Build.VERSION_CODES.O)
         override fun onResult(results: List<Category>, ordered: List<Category>, inferenceTime: Long) {
             requireActivity().runOnUiThread {
                 if (recording)
@@ -91,22 +98,7 @@ class AudioFragment : Fragment() {
                 adapter.notifyDataSetChanged()
             }
         }
-        fun saveCurrentLocationString(onResult: (String?) -> Unit) {
-            if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-                onResult(null)
-                return
-            }
 
-            fusedLocationClient.lastLocation
-                .addOnSuccessListener { location ->
-                    val latLonString = location?.let { "${it.latitude},${it.longitude}" }
-                    onResult(latLonString)
-                }
-                .addOnFailureListener {
-                    onResult(null)
-                }
-        }
         @RequiresApi(Build.VERSION_CODES.O)
         fun stackData(results: List<Category>){
         // Cycle to add all the elements from results to a new List of String
@@ -133,44 +125,7 @@ class AudioFragment : Fragment() {
             }
 
         }
-        override fun saveCsvFile(filename: String) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val contentValues = ContentValues().apply {
-                    put(MediaStore.MediaColumns.DISPLAY_NAME, "$filename.csv")
-                    put(MediaStore.MediaColumns.MIME_TYPE, "text/csv")
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS)
-                }
 
-                val contentResolver = requireContext().contentResolver
-                val uri = contentResolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
-
-                if (uri != null) {
-                    try {
-                        val outputStream: OutputStream? = contentResolver.openOutputStream(uri)
-                        outputStream?.use {
-                            // Write CSV header (Categories)
-                            it.write(categories.joinToString(separator = ",").toByteArray())
-
-                            // Write data rows
-                            data.forEach { row ->
-                                it.write(row.joinToString(separator = ",").toByteArray())
-                                it.write("\n".toByteArray())
-                            }
-
-                            Toast.makeText(context, "CSV file saved in Documents folder", Toast.LENGTH_SHORT).show()
-                        }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                        Toast.makeText(context, "Error saving CSV file", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Toast.makeText(context, "Error accessing Documents folder", Toast.LENGTH_SHORT).show()
-                }
-            } else {
-                // Handle the case for older Android versions (API level < 29)
-                Toast.makeText(context, "Requires API level 29 or higher", Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -183,13 +138,14 @@ class AudioFragment : Fragment() {
         _fragmentBinding = FragmentAudioBinding.inflate(inflater, container, false)
         val start: Button = _fragmentBinding!!.startButton
         val stop: Button = _fragmentBinding!!.stopButton
+        val note: Button = _fragmentBinding!!.addComment
+
         start.setOnClickListener {
             stop.visibility=View.VISIBLE
             start.visibility=View.INVISIBLE
             recording=true
         }
         stop.setOnClickListener {
-            // Code to execute when the button is clicked
             start.visibility=View.VISIBLE
             stop.visibility=View.INVISIBLE
             recording=false
@@ -198,8 +154,43 @@ class AudioFragment : Fragment() {
             var fileN = "RRAA_"+ currentDateTime.year.toString()+currentDateTime.month.toString()+currentDateTime.dayOfMonth.toString()+"_"+currentDateTime.hour.toString()+currentDateTime.minute.toString()
             saveCsvFile(fileN)
         }
+        note.setOnClickListener {
+            showInputDialog()
+        }
         return fragmentAudioBinding.root
     }
+    private fun showInputDialog() {
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.annotations, null)
+        val editText = dialogView.findViewById<EditText>(R.id.editTextInput)
+        val saveButton = dialogView.findViewById<Button>(R.id.buttonSaveAnnotation)
+
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+        saveButton.setOnClickListener {
+            val inputText = editText.text.toString()
+            saveAnnotation(inputText)
+            dialog.dismiss()
+        }
+        dialog.show()
+    }
+    fun saveCurrentLocationString(onResult: (String?) -> Unit) {
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED) {
+            onResult(null)
+            return
+        }
+
+        fusedLocationClient.lastLocation
+            .addOnSuccessListener { location ->
+                val latLonString = location?.let { "${it.latitude},${it.longitude}" }
+                onResult(latLonString)
+            }
+            .addOnFailureListener {
+                onResult(null)
+            }
+    }
+
     fun saveCsvFile(filename: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val contentValues = ContentValues().apply {
@@ -237,6 +228,88 @@ class AudioFragment : Fragment() {
             // Handle the case for older Android versions (API level < 29)
             Toast.makeText(context, "Requires API level 29 or higher", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    fun saveAnnotation(annotation: String){
+        val currentMoment = LocalDateTime.now()
+        saveCurrentLocationString { result ->
+            val currentLocation = result ?: "Unknown location"
+            var now = ""+ currentMoment.monthValue.toString()+"/"+currentMoment.dayOfMonth.toString()+"/"+currentMoment.year.toString()+"_"+currentMoment.hour.toString()+":"+currentMoment.minute.toString()+":"+currentMoment.second.toString()+":"+(currentMoment.nano/ 1_000_000).toString()
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                Toast.makeText(context, "Requires Android 10 (API 29) or higher", Toast.LENGTH_SHORT).show()
+                return@saveCurrentLocationString
+            }
+            val contentResolver = requireContext().contentResolver
+
+            if (currentMetadataUri == null) {
+                val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                val filename = "metadata_$timestamp.json"
+
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                    put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/")
+                }
+                currentMetadataUri = contentResolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
+
+                // Initialize file with empty annotations array
+                currentMetadataUri?.let { uri ->
+                    val initJson = JSONObject().apply {
+                        put("annotations", JSONArray())
+                    }
+                    contentResolver.openOutputStream(uri, "wt")?.use { output ->
+                        output.write(initJson.toString(4).toByteArray())
+                    }
+                }
+            }
+            val uri = currentMetadataUri
+            if (uri == null) {
+                Toast.makeText(context, "Error creating metadata file", Toast.LENGTH_SHORT).show()
+                return@saveCurrentLocationString
+            }
+            try {
+                // Load current JSON
+                val jsonObject = try {
+                    contentResolver.openInputStream(uri)?.use { input ->
+                        val text = input.bufferedReader().readText()
+                        if (text.isNotEmpty()) JSONObject(text) else JSONObject()
+                    } ?: JSONObject()
+                } catch (e: Exception) {
+                    JSONObject()
+                }
+
+                // Ensure annotations array exists
+                val annotationsArray = if (jsonObject.has("annotations")) {
+                    jsonObject.getJSONArray("annotations")
+                } else {
+                    val newArray = JSONArray()
+                    jsonObject.put("annotations", newArray)
+                    newArray
+                }
+
+                // Append new annotation
+                val newAnnotation = JSONObject().apply {
+                    put("note", annotation)
+                    put("time", now)  // Add timestamp
+                    put("location", currentLocation)  // Add GPS later if needed
+                }
+                annotationsArray.put(newAnnotation)
+
+                // Write updated JSON back
+                contentResolver.openOutputStream(uri, "wt")?.use { output ->
+                    output.write(jsonObject.toString(4).toByteArray())
+                }
+
+                Toast.makeText(context, "Annotation saved", Toast.LENGTH_SHORT).show()
+
+            } catch (e: IOException) {
+                e.printStackTrace()
+                Toast.makeText(context, "Error saving annotation", Toast.LENGTH_SHORT).show()
+            }
+
+            Toast.makeText(requireContext(), "Annotation saved", Toast.LENGTH_SHORT).show()
+        }
+
     }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

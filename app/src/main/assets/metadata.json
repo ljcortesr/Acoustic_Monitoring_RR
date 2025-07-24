@@ -1,0 +1,25 @@
+{
+  "model": "YAMNet",
+  "numberSamples": 11,
+  "threshold": 0.3,
+  "threads": 2,
+  "categoriesFile": "RRAA_2025JULY4_1830.csv",
+  "audioFile": "field_recording.wav",
+  "visualDocumentation": [
+    "panoramicView.png",
+    "waterfallPhoto.jpg"
+  ],
+  "annotations": [
+    {
+      "note": "",
+      "time": "",
+      "location": ""
+    },
+    {
+      "note": "",
+      "time": "",
+      "location": ""
+    }
+  ],
+  "landAcknowledgements": "... We use a model trained..."
+}
