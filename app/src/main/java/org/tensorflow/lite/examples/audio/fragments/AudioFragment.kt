@@ -51,6 +51,15 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.*
 import android.net.Uri
+import android.media.MediaRecorder
+import android.util.Log
+import java.io.File
+import android.os.Handler
+import android.os.Looper
+import android.widget.TextView
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.Priority
+import java.io.FileOutputStream
 
 
 interface AudioClassificationListener {
@@ -60,6 +69,9 @@ interface AudioClassificationListener {
 }
 
 class AudioFragment : Fragment() {
+    private var mediaRecorder: MediaRecorder? = null
+    private var audioFile: File? = null
+
     private var recording= false
     private var firstTime= true
     private var data: MutableList<MutableList<String>> = mutableListOf()
@@ -76,6 +88,12 @@ class AudioFragment : Fragment() {
 
     //To save metadata
     private var currentMetadataUri: Uri? = null
+
+    //To display Timer
+    private var timerHandler: Handler? = null
+    private var timerRunnable: Runnable? = null
+    private var secondsElapsed: Int = 0
+    private var timerTextView: TextView? = null
 
     private val audioClassificationListener = object : AudioClassificationListener {
         @RequiresApi(Build.VERSION_CODES.O)
@@ -127,6 +145,132 @@ class AudioFragment : Fragment() {
         }
 
     }
+    private fun startRecordingAndClassification() {
+        recording = true
+        categories.clear()
+        data.clear()
+        startTimer()
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                mediaRecorder = MediaRecorder(requireContext())
+            } else {
+                @Suppress("DEPRECATION")
+                mediaRecorder = MediaRecorder()
+            }
+
+            val outputDir = requireContext().cacheDir
+            audioFile = File.createTempFile("recording_", ".mp3", outputDir)
+
+            mediaRecorder?.apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setAudioChannels(2)
+                setOutputFile(audioFile?.absolutePath)
+                prepare()
+                start()
+            }
+        } catch (e: IOException) {
+            Log.e("AudioFragment", "MediaRecorder setup failed", e)
+            Toast.makeText(context, "Audio recording failed to start.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun stopRecordingAndClassification() {
+        // 1. Stop audio classification data stacking
+        recording = false
+        firstTime = true // Reset for the next CSV
+        stopTimer()
+        // 2. Stop and release MediaRecorder
+        try {
+            mediaRecorder?.apply {
+                stop()
+                release()
+            }
+        } catch (e: IllegalStateException) {
+            // This can happen if stop() is called before start() or after stop()
+            Log.e("AudioFragment", "MediaRecorder stop failed: ${e.message}")
+        }
+        mediaRecorder = null
+
+        // 3. Save the recorded audio file and the CSV data
+        val currentDateTime = LocalDateTime.now()
+        val baseFilename = "RRAA_" + currentDateTime.year.toString() +
+                currentDateTime.month.toString().padStart(2, '0') +
+                currentDateTime.dayOfMonth.toString().padStart(2, '0') + "_" +
+                currentDateTime.hour.toString().padStart(2, '0') +
+                currentDateTime.minute.toString().padStart(2, '0')
+
+        saveAudioFile(baseFilename)
+        saveCsvFile(baseFilename) // Your existing function
+    }
+    private fun startTimer() {
+        secondsElapsed = 0
+        timerTextView?.visibility = View.VISIBLE
+        timerHandler = Handler(Looper.getMainLooper())
+        timerRunnable = object : Runnable {
+            override fun run() {
+                secondsElapsed++
+                updateTimerDisplay()
+                timerHandler?.postDelayed(this, 1000) // Run again after 1 second
+            }
+        }
+        timerHandler?.post(timerRunnable!!)
+    }
+
+    private fun stopTimer() {
+        timerHandler?.removeCallbacks(timerRunnable!!)
+        timerRunnable = null
+        timerHandler = null
+        timerTextView?.visibility = View.INVISIBLE
+    }
+
+    private fun updateTimerDisplay() {
+        val hours = secondsElapsed / 3600
+        val minutes = (secondsElapsed % 3600) / 60
+        val seconds = secondsElapsed % 60
+
+        val timeString = String.format("%02d:%02d:%02d", hours, minutes, seconds)
+        timerTextView?.text = timeString
+    }
+    private fun saveAudioFile(filename: String) {
+        if (audioFile == null || !audioFile!!.exists()) {
+            Toast.makeText(context, "No audio recording to save.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, "$filename.aac")
+                put(MediaStore.MediaColumns.MIME_TYPE, "audio/aac")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS)
+            }
+
+            //val resolver = requireContext().contentResolver
+            //val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues)
+            val resolver = requireContext().contentResolver
+            val uri = resolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
+
+            uri?.let {
+                try {
+                    resolver.openOutputStream(it)?.use { outputStream ->
+                        audioFile!!.inputStream().copyTo(outputStream)
+                    }
+                    Toast.makeText(context, "Audio saved to Documents folder", Toast.LENGTH_SHORT).show()
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                    Toast.makeText(context, "Error saving audio file", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } else {
+            // For older versions, you might need different logic or to request WRITE_EXTERNAL_STORAGE
+            Toast.makeText(context, "Saving audio requires Android 10+", Toast.LENGTH_SHORT).show()
+        }
+
+        // Clean up the temporary file
+        audioFile?.delete()
+        audioFile = null
+    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreateView(
@@ -140,19 +284,23 @@ class AudioFragment : Fragment() {
         val stop: Button = _fragmentBinding!!.stopButton
         val note: Button = _fragmentBinding!!.addComment
 
+        timerTextView = _fragmentBinding!!.timerText
+
         start.setOnClickListener {
             stop.visibility=View.VISIBLE
             start.visibility=View.INVISIBLE
-            recording=true
+            startRecordingAndClassification()
+           // recording=true
         }
         stop.setOnClickListener {
             start.visibility=View.VISIBLE
             stop.visibility=View.INVISIBLE
-            recording=false
-            firstTime=true
-            val currentDateTime = LocalDateTime.now()
-            var fileN = "RRAA_"+ currentDateTime.year.toString()+currentDateTime.month.toString()+currentDateTime.dayOfMonth.toString()+"_"+currentDateTime.hour.toString()+currentDateTime.minute.toString()
-            saveCsvFile(fileN)
+            stopRecordingAndClassification()
+            //recording=false
+            //firstTime=true
+            //val currentDateTime = LocalDateTime.now()
+            //var fileN = "RRAA_"+ currentDateTime.year.toString()+currentDateTime.month.toString()+currentDateTime.dayOfMonth.toString()+"_"+currentDateTime.hour.toString()+currentDateTime.minute.toString()
+            //saveCsvFile(fileN)
         }
         note.setOnClickListener {
             showInputDialog()
@@ -181,13 +329,28 @@ class AudioFragment : Fragment() {
             return
         }
 
-        fusedLocationClient.lastLocation
+        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
             .addOnSuccessListener { location ->
-                val latLonString = location?.let { "${it.latitude},${it.longitude}" }
-                onResult(latLonString)
+                if (location != null) {
+                    // Location found, format it and return via the callback
+                    val locationString = "Lat: ${location.latitude}, Lon: ${location.longitude}"
+                    onResult(locationString)
+                } else {
+                    // Location is null, which can happen. Fallback to last known location.
+                    // This is a good safety net.
+                    fusedLocationClient.lastLocation.addOnSuccessListener { lastLocation ->
+                        if (lastLocation != null) {
+                            val locationString = "Lat: ${lastLocation.latitude}, Lon: ${lastLocation.longitude}"
+                            onResult(locationString)
+                        } else {
+                            onResult("Unknown location")
+                        }
+                    }
+                }
             }
             .addOnFailureListener {
-                onResult(null)
+                // Handle failure to get location
+                onResult("Location update failed")
             }
     }
 
@@ -243,14 +406,17 @@ class AudioFragment : Fragment() {
 
             if (currentMetadataUri == null) {
                 val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-                val filename = "metadata_$timestamp.json"
+                val filename = "Annotations_$timestamp.json"
 
                 val contentValues = ContentValues().apply {
                     put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
                     put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS)
                 }
-                currentMetadataUri = contentResolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
+
+
+                val resolver = requireContext().contentResolver
+                currentMetadataUri = resolver.insert(MediaStore.Files.getContentUri("external"), contentValues)
 
                 // Initialize file with empty annotations array
                 currentMetadataUri?.let { uri ->

@@ -33,7 +33,7 @@
 
     <string name="label_start">Start</string>
     <string name="label_save">Save</string>
-    <string name="label_indication">Data recording</string>
+    <string name="label_indication">Recording</string>
 
     <string name="label_note">Add note</string>
     <string name="hint_text">Add some annotations about your acoustic experience</string>

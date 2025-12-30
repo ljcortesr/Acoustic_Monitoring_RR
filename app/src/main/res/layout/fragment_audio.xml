@@ -43,6 +43,17 @@
                 android:layout_weight="1"
                 android:text="@string/label_indication" />
 
+            <TextView
+                android:id="@+id/timer_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="00:00:00"
+                android:textColor="@android:color/holo_red_dark"
+                android:textSize="12sp"
+                android:visibility="invisible"
+                />
+
             <Button
                 android:id="@+id/startButton"
                 android:layout_width="0dp"
