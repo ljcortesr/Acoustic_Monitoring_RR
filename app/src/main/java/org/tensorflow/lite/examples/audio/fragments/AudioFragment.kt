@@ -159,13 +159,15 @@ class AudioFragment : Fragment() {
             }
 
             val outputDir = requireContext().cacheDir
-            audioFile = File.createTempFile("recording_", ".mp3", outputDir)
+            audioFile = File.createTempFile("recording_", ".m4a", outputDir)
 
             mediaRecorder?.apply {
                 setAudioSource(MediaRecorder.AudioSource.MIC)
-                setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                 setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
                 setAudioChannels(2)
+                setAudioSamplingRate(44100)
+                setAudioEncodingBitRate(320000)
                 setOutputFile(audioFile?.absolutePath)
                 prepare()
                 start()
@@ -241,8 +243,8 @@ class AudioFragment : Fragment() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, "$filename.aac")
-                put(MediaStore.MediaColumns.MIME_TYPE, "audio/aac")
+                put(MediaStore.MediaColumns.DISPLAY_NAME, "$filename.m4a")
+                put(MediaStore.MediaColumns.MIME_TYPE, "audio/mp4")
                 put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS)
             }
 
