@@ -1,6 +1,20 @@
-# TensorFlow Lite Audio Classification Android Demo
+# Audio Classification Android Demo extended from TensorFlow Lite 
 
-### Overview
+### R&R Overview
+
+Mobile application for Android that captures short segments of environmental audio and performs real-time sound-event classification. The app uses YAMNet, a TensorFlow model trained on AudioSet, to estimate the probability (ranging from 0 to 1) of 521 sound classes being present in each acoustic scene.
+
+Key characteristics: 
+- Real-time classification, performed every 0.975 seconds
+- Temporal averaging, allowing the user to define how many classification frames are averaged per recorded entry
+- Stereo audio recording
+- Geolocation and timestamping of each recording
+- User-generated annotations, which are also geolocated and time-stamped
+- Storage of both the raw audio and the classification outputs for later analysis
+- This system currently operates exclusively in real time, analyzing live microphone input on the device.
+
+
+### TensorFlow Overview
 
 This sample will record audio on a physical Android device and attempt to
 classify those recordings. The supported classification models include
