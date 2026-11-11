@@ -1,20 +1,11 @@
 # Machine Listening
 
-This repository brings together tools and materials for acoustic monitoring
-and soundwalks.
+This repository brings together a series of tools, materials, and literature related to machine listening of environmental sounds. 
 
 ## Repository structure
 
 - [Mobile App](./Mobile%20App/README.md) - Android application for recording
-  environmental audio and classifying sound events.
-- [WebVisualizer](./WebVisualizer/README.md) - reserved for the web visualizer
-  source code.
-- [Soundwalks](./Soundwalks/README.md) - reserved for the soundwalk guide and
-  example recordings and data.
-- [Literature](./Literature/README.md) - research references and notes.
-
-## Getting started
-
-To build and run the Android application, open the `Mobile App` directory in
-Android Studio. See its [README](./Mobile%20App/README.md) for requirements and
-build instructions.
+  environmental audio and classifying sound events, using the YamNET model, trained on AudioSet.
+- [WebVisualizer](./WebVisualizer/README.md) - HTML+JS+CSS web interface that allows you to load the files produced during the soundwalks to visualize/listen to them afterward.
+- [Soundwalks](./Soundwalks/README.md) - Guide with questions and provocations for soundwalking the machine (soundwalking and carrying on the phone with the mobile app classifying the soundscape). Built on [Hildergard Westerkamp](https://www.hildegardwesterkamp.ca/).
+- [Literature](./Literature/README.md) - List of critical and historical literature related to machine listening, with an emphasis on environmental sounds.
