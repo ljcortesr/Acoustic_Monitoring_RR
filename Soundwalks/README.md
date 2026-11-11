@@ -1,10 +1,12 @@
 # Soundwalking the Machine: A Guide
 
-This guide oriented the soundwalks of our critical technical practice of environmental machine listening (Appendix B of the paper reproduces it). It is meant to guide walks, not to script them: choose your route, pace, and company, and take up, adapt, or ignore its prompts. You are welcome to adapt it to other listening machines.
+This guide is aimed at orienting the soundwalks of our critical technical practice of environmental machine listening. It is not meant to script, but to guide the soundwalks, so you can choose your route, pace, and company, and take up, adapt, or ignore its prompts. 
+
+You are welcome to adapt it to other "listening" machines.
 
 ## About the activity
 
-*Soundwalking the machine* is a way of examining machine listening systems that "listen to" environmental sounds from the experience of using them, not only as designers but as listeners. A soundwalk is, in Hildegard Westerkamp's words, "any excursion whose main purpose is listening to the environment" (Westerkamp 1974): no matter where, no matter when, as long as listening is at the core of the experience. Here, you walk (or cycle, ride, or sail) with a listening machine alongside you.
+*Soundwalking the machine* is a way of listening alongside the machine. In that sense, we invite the participants to reflect on machine listening systems from the experience of using them, not only as designers but as listeners. A soundwalk is, in Hildegard Westerkamp's words, "any excursion whose main purpose is listening to the environment" (Westerkamp 1974): no matter where, no matter when, as long as listening is at the core of the experience. While *soundwalking the machine*, you walk (or cycle, ride, or sail) with a listening machine alongside you.
 
 The activity has three moments:
 
