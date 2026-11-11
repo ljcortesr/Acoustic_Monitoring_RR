@@ -1,0 +1,3 @@
+# Literature
+
+Research references and notes will be added here.
