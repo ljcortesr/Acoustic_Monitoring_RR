@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Audio Classification</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
+    .wrap { max-width: 860px; margin: 0 auto; }
+    .panel { border: 1px solid #e6e6ef; border-radius: 18px; padding: 18px; box-shadow: 0 6px 18px rgba(0,0,0,0.05); }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .muted { color: #666; font-size: 14px; }
+    canvas { display:block; margin-top: 18px; border-radius: 14px; }
+    a { color: inherit; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <div class="row">
+        <div>
+          <div style="font-weight:700; font-size:18px;">Audio Classification</div>          
+        </div>
+      </div>
+      <div style="margin-top:12px; display:flex; gap:12px; flex-wrap:wrap;">
+      <label>
+        CSV file:
+        <input type="file" id="csvInput" accept=".csv" />
+      </label>      
+      <label>
+        Audio file:
+        <input type="file" id="audioInput"/>
+      </label>
+      <label>
+        Annotations (JSON):
+        <input type="file" id="annInput" accept="application/json,.json" />
+      </label>
+    </div>
+      <!-- P5 will create the audio UI and the canvas -->
+      <div id="audio-holder" style="margin-top:12px;"></div>
+      <div
+        id="map"
+        style="height: 320px; width: 100%; margin-top: 12px; border-radius: 14px; overflow: hidden;">
+      </div>
+      <canvas
+        id="spec"
+        width="880"
+        height="220"
+        style="width:100%; margin-top:12px; border-radius:14px; border:1px solid #e6e6ef;"
+      ></canvas>
+      <div id="canvas-holder"></div>
+
+    </div>    
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="sketch.js"></script>
+</body>
+</html>
